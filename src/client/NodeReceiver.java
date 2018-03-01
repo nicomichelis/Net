@@ -6,9 +6,6 @@ import java.io.ObjectInputStream;
 import static java.lang.System.exit;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import structs.Value;
 
 /* This class will handle the incoming messages from other nodes */
 public class NodeReceiver implements Runnable {
@@ -23,17 +20,26 @@ public class NodeReceiver implements Runnable {
     }
     
     public NodeReceiver(Node node) {
-        // TODO se non passo una porta se ne prende una libera e comunica su quale ascolta
-        System.out.println("NodeReceiver Error 003");
+        exit = false;
+        this.node = node;
+        try {
+            server = new ServerSocket(0);
+            this.port = server.getLocalPort();
+        } catch (IOException ex) {
+            System.out.println("NodeReceiver Error 002 - Node: " + this.node.getID());
+            ex.printStackTrace();
+            exit(-1);
+        }
     }
     
     public NodeReceiver(int port, Node node) {
+        this.port = port;
         exit = false;
         this.node = node;
         try {
             server = new ServerSocket(port);
         } catch (IOException ex) {
-            System.out.println("NodeReceiver Error 002 - Node: " + this.node.getID());
+            System.out.println("NodeReceiver Error 003 - Node: " + this.node.getID());
             ex.printStackTrace();
             exit(-1);
         }
@@ -42,8 +48,8 @@ public class NodeReceiver implements Runnable {
     @Override
     public void run() {
         System.out.println("Receiver started for node " + node.getID() + " on port " + server.getLocalPort());
-        InputStream is = null;
-        ObjectInputStream ois = null;
+        InputStream is;
+        ObjectInputStream ois;
         while (!exit) {
             try {
                 Socket s = server.accept();
@@ -64,4 +70,9 @@ public class NodeReceiver implements Runnable {
             }
         }
     }
+    
+    public int getPort() {
+        return this.port;
+    }
+   
 }
