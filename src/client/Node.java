@@ -1,112 +1,98 @@
 package client;
 
-import java.util.List;
-
 import structs.Connection;
-import structs.Value;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class Node implements Runnable {
-    private final int WAIT = 2000;
-    private Value value = null;
-    private Connection connectedNodes = null;
+public class Node implements Runnable{
     private int id;
-
+    private int port;
+    private boolean exit;
+    private NodeReceiver receiver;
+    private String value;
+    private ArrayList<Connection> connections;
+    
     public Node() {
-        this.value = new Value();
-        this.connectedNodes = new Connection();
-        this.id = -1;
+        System.out.println("Node error 001");
+    }
+
+    public Node(int id, int port) {
+        this.id = id;
+        this.port = port;
+        this.exit = false;
+        this.value = "";
+        this.connections = new ArrayList<Connection>();
+        this.receiver = new NodeReceiver(port, this);
     }
     
-    public Node(int id) {
-        this.value = new Value();
-        this.connectedNodes = new Connection();
-        this.id = id;
-    }
-
-    public Node(Node node) {
-        this.value = node.value;
-        this.connectedNodes = node.connectedNodes;
-        this.id = node.id;
-    }
-
-    public void onReceive(Value value) {
-        if (this.value.time < value.time) {
-            this.value.Copy(value);
+    @Override
+    public void run() {
+        Thread receiverThread = new Thread(this.receiver);
+        receiverThread.start();
+        System.out.println("Node active " + this.id);
+        boolean test = true;
+        while (!exit) {
+            // TODO fai cose
+            // TEST
+            if (this.id == 0 && test) {
+                connectNode("127.0.0.1",2001);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                sendValue();
+            }
+            if (this.id == 1 && test) {
+                connectNode("127.0.0.1",2000);
+                this.value = "LILS";
+                sendValue();
+            }
+            if (this.id == 0 && test) {
+                connectNode("127.0.0.1",2001);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                this.value="EHU";
+                sendValue();
+            }
+            if (this.id == 1 && test) {
+                connectNode("127.0.0.1",2000);
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                sendValue();
+            }
+            test = false;
+            // ENDTEST
         }
     }
+    
+    public synchronized void setValue(String receivedValue) {
+        this.value = receivedValue;
+    }
 
-    public boolean onTimeout() {
-        Value temp = connectedNodes.getValue();
-        if (this.value.time < temp.time) {
-            this.value.Copy(temp);
-            return true;
-        }
+    public int getID() {
+        return this.id;
+    }
+    
+    public boolean sendValue() {
+        // TODO mando valore alla rete
+        this.connections.get(0).sendValue(this.value);
         return false;
     }
     
-    public Value getValue() {
-        return this.value;
-    }
-    
-    public void setConnections(List<Node> n) {
-        this.connectedNodes.copy(n);
-    }
-
-    @Override
-    public void run() {
-        int j = 0;
-        while (true) {
-            j++;
-            try {
-                Thread.sleep(WAIT);
-            } catch (InterruptedException ex) {
-                System.out.println("Node exception 001");
-            }
-            System.out.println("N: "+this.id+" - v: "+this.value.value+" t: "+this.value.time);
-            if (onTimeout()) {
-               System.out.println("N: "+this.id+" - v: "+this.value.value+" t: "+this.value.time+" *"); 
-            }
-            if (this.id == 1 && j == 2) {
-                this.value.newValue(2);
-            }
-            if (this.id == 0 && j == 4) {
-                this.value.newValue(23);
-            }
-        }
-
+    public boolean connectNode(String addr, int port) {
+        Connection conn = new Connection(addr, port);
+        return connections.add(conn);
     }
 }
-
-
-/* OLD run()
-InputStreamReader reader = null;
-        BufferedReader buffer = null;
-        while (true) {
-            reader = new InputStreamReader(System.in);
-            buffer = new BufferedReader(reader);
-            String line = "";
-            try {
-                line = buffer.readLine();
-            } catch (Exception e) {
-                System.out.println("Exception 001 - Input buffer");
-                e.printStackTrace();
-            }
-            System.out.println(line);
-            int v = -1;
-            if (line.equals("quit")) {
-                break;
-            } else {
-                try {
-                    v = Integer.parseInt(line);
-                } catch (Exception e) {
-                    System.out.println("Exception 002 - Parsing int value");
-                    e.printStackTrace();
-                    break;
-                }
-            }
-            this.value.newValue(v);
-            System.out.print("Value: " + this.value.value + " Time: " + this.value.time);
-        }
-
-
-*/
