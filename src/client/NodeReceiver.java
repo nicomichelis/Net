@@ -53,7 +53,6 @@ public class NodeReceiver implements Runnable {
         while (!exit) {
             try {
                 Socket s = server.accept();
-                System.out.println("Connection accepted");
                 is = s.getInputStream();
 		ois = new ObjectInputStream(is);
                 // TODO: ora è uno string, poi dovrà essere un value

@@ -35,7 +35,8 @@ public class Connection {
                         + this.address + ":" + this.port);
             } catch (Exception ex) {
                 System.out.println("Connection error 002");
+                return false;
             }
-            return false;
+            return true;
         }
 }
